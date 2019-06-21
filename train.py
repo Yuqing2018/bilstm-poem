@@ -43,9 +43,7 @@ def train(train_data, test_data, vocabulary_size, args):
         def test_perplexity(test_data, step):
             test_batches = batch_iter(test_data, args.batch_size, 1)
             losses, iters = 0, 0
-            i=0
             for test_batch_x in test_batches:
-                print("test_batch_x %d shape:"% ++i, test_batch_x.shape)
                 feed_dict = {model.x: test_batch_x, model.keep_prob: 1.0}
                 summaries, loss = sess.run([summary_op, model.loss], feed_dict=feed_dict)
                 test_summary_writer.add_summary(summaries, step)
