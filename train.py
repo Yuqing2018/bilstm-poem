@@ -1,4 +1,6 @@
 import argparse
+import os
+import time
 import numpy as np
 import tensorflow as tf
 from data_utils import build_word_dict, build_dataset,build_word_dict1, build_dataset1, batch_iter
@@ -29,6 +31,15 @@ def train(train_data, test_data, vocabulary_size, args):
         train_summary_writer = tf.summary.FileWriter(args.model + "-train", sess.graph)
         test_summary_writer = tf.summary.FileWriter(args.model + "-test", sess.graph)
 
+        out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", str(int(time.time()))))
+        # Checkpointing
+        checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
+        checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+        # Tensorflow assumes this directory already exists so we need to create it
+        if not os.path.exists(checkpoint_dir):
+            os.makedirs(checkpoint_dir)
+        saver = tf.train.Saver(tf.all_variables())
+
         # Initialize all variables
         sess.run(tf.global_variables_initializer())
 
@@ -57,28 +68,32 @@ def train(train_data, test_data, vocabulary_size, args):
             train_step(batch_x)
             step = tf.train.global_step(sess, global_step)
 
-            if step % 100 == 1:
+            if step % 50 == 1:
                 perplexity = test_perplexity(test_data, step)
                 print("\ttest perplexity: {}".format(perplexity))
+            if step % 100 == 0:
+                path = saver.save(sess, checkpoint_prefix, global_step= step)
+                print("Saved model checkpoint to {}\n".format(path))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="birnn", help="rnn | birnn")
-    parser.add_argument("--embedding_size", type=int, default=300, help="embedding size.")
-    parser.add_argument("--num_layers", type=int, default=1, help="RNN network depth.")
-    parser.add_argument("--num_hidden", type=int, default=300, help="RNN network size.")
+    parser.add_argument("--model", type=str, default="rnn", help="rnn | birnn")
+    parser.add_argument("--embedding_size", type=int, default=128, help="embedding size.")
+    parser.add_argument("--num_layers", type=int, default=2, help="RNN network depth.")
+    parser.add_argument("--num_hidden", type=int, default=128, help="RNN network size.")
     parser.add_argument("--keep_prob", type=float, default=0.5, help="dropout keep prob.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="learning rate.")
 
     parser.add_argument("--batch_size", type=int, default=64, help="batch size.")
-    parser.add_argument("--num_epochs", type=int, default=30, help="number of epochs.")
+    parser.add_argument("--num_epochs", type=int, default=10, help="number of epochs.")
     args = parser.parse_args()
 
     train_file = "poetryData/poetryTang.txt"
     word_dict = build_word_dict1(train_file)
 
-    data= build_dataset1(train_file, word_dict)
+    data = build_dataset1(train_file, word_dict)
+    np.random.shuffle(data)
     train_data = data[:int(len(data) * 0.8)]
     test_data = data[int(len(data) * 0.8):]
     # train_file = "ptb_data/ptb.train.txt"

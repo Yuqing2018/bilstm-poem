@@ -1,9 +1,10 @@
 import collections
 import numpy as np
-
+import jieba
 
 def build_word_dict1(filename):
     poems = []
+    result=[]
     with open(filename, "r") as f:
 
         for line in f:  # every line is a poem
@@ -16,6 +17,9 @@ def build_word_dict1(filename):
             poem = '[' + poem + ']'  # add start and end signs
             poems.append(poem)
             # print(title, author, poem)
+            result.append(' '.join(jieba.cut(poem)))
+        with open('./poetryData/nlp_test1.txt','w') as f1:
+            f1.writelines(result)
 
         # counting words
         wordFreq = collections.Counter()
@@ -27,6 +31,25 @@ def build_word_dict1(filename):
         wordNum = len(words)
         word_dict = dict(zip(words, range(wordNum)))  # word to ID
         return word_dict
+
+def nlp_test(filename):
+    poems = []
+    result = []
+    with open(filename, "r") as f:
+
+        for line in f:  # every line is a poem
+            title, author, poem = line.strip().split("::")  # get title and poem
+            poem = poem.replace(' ', '')
+            if len(poem) < 10 or len(poem) > 512:  # filter poem
+                continue
+            if '_' in poem or '《' in poem or '[' in poem or '(' in poem or '（' in poem:
+                continue
+            # poem = '[' + poem + ']'  # add start and end signs
+            poems.append(poem)
+            # print(title, author, poem)
+            result.append(' '.join(jieba.cut(poem)))
+        with open('./poetryData/nlp_test1.txt', 'w') as f1:
+            f1.write('\n'.join(result))
 
 
 def build_dataset1(filename, word_dict):
